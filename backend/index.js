@@ -13,3 +13,5 @@ app.use('/api/admin', require('./src/routes/admin'));
 app.listen(process.env.PORT, () =>
   console.log(`Server running on port ${process.env.PORT}`)
 );
+
+app.use('/api/export', require('./src/routes/export'));
