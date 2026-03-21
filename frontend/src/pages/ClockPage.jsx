@@ -49,11 +49,11 @@ export default function ClockPage() {
   };
 
   const fmt = (ts) => ts
-    ? new Date(ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    ? new Date(ts).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' })
     : '--:--';
 
   const now = new Date();
-  const dateStr = now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
+  const dateStr = now.toLocaleDateString('en-CA', { month: 'long', day: 'numeric', weekday: 'long' });
 
   const workHours = () => {
     if (!status?.clock_in || !status?.clock_out) return null;
@@ -169,7 +169,7 @@ export default function ClockPage() {
           : weekRecords.map(r => (
             <div key={r.id} className="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0">
               <span className="text-xs font-medium text-gray-400 w-16">
-                {new Date(r.record_date).toLocaleDateString('zh-CN', { weekday: 'short', day: 'numeric' })}
+                {new Date(r.record_date).toLocaleDateString('en-CA', { weekday: 'short', day: 'numeric' })}
               </span>
               <span className="text-xs text-gray-600">{fmt(r.clock_in)} — {fmt(r.clock_out)}</span>
               <span className="text-xs px-2 py-0.5 rounded-full"

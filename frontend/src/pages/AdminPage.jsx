@@ -27,7 +27,7 @@ export default function AdminPage() {
     fetchWeekly();
   };
 
-  const fmt = (ts) => ts ? new Date(ts).toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'}) : '--';
+  const fmt = (ts) => ts ? new Date(ts).toLocaleTimeString('en-CA', {hour:'2-digit', minute:'2-digit'}) : '--';
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 max-w-2xl mx-auto">
