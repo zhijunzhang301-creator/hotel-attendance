@@ -30,6 +30,9 @@ export default function Login() {
       const { data } = await api.post('/auth/login', payload);
       finishLogin(data);
     } catch (err) {
+      console.log('axios error:', err);
+      console.log('response:', err.response);
+      console.log('data:', err.response?.data);
       setError(err.response?.data?.error || 'Login failed. Please try again!');
     } finally {
       setLoading(false);
@@ -52,13 +55,13 @@ export default function Login() {
     }
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-    if (token) {
-      navigate(role === 'admin' || role === 'manager' ? '/admin' : '/clock', { replace: true });
-    }
-  }, [navigate]);
+  // useEffect(() => {
+  //   const token = localStorage.getItem('token');
+  //   const role = localStorage.getItem('role');
+  //   if (token) {
+  //     navigate(role === 'admin' || role === 'manager' ? '/admin' : '/clock', { replace: true });
+  //   }
+  // }, [navigate]);
 
   useEffect(() => {
     const employee_no = searchParams.get('employee_no') || '';
@@ -111,6 +114,7 @@ export default function Login() {
             <div>
               <label className="text-xs font-medium text-gray-400 uppercase tracking-wide block mb-1.5">Employee Number</label>
               <input
+                name="employee_no"
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300"
                 placeholder="Enter your employee number"
                 value={form.employee_no}
@@ -121,6 +125,7 @@ export default function Login() {
             <div>
               <label className="text-xs font-medium text-gray-400 uppercase tracking-wide block mb-1.5">Password</label>
               <input
+                name="password"
                 type="password"
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-300"
                 placeholder="Enter password"
@@ -148,7 +153,8 @@ export default function Login() {
           </div>
 
           <button
-            onClick={handleLogin}
+            // onClick={handleLogin}
+            onClick={() => handleLogin()}
             disabled={loading || !form.employee_no || !form.password}
             className="w-full mt-4 py-3.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
             style={{ background: loading ? '#8E8E93' : 'linear-gradient(135deg, #007AFF, #5856D6)' }}

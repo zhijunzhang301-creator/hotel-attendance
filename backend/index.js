@@ -43,12 +43,11 @@ app.use('/api/export', require('./src/routes/export'));
 if (hasFrontendBuild) {
   app.use(express.static(frontendDistPath));
 
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api/')) {
-      return next();
+  app.use((req, res, next) => {
+    if (!req.path.startsWith('/api/') && req.method === 'GET') {
+      return res.sendFile(path.join(frontendDistPath, 'index.html'));
     }
-
-    return res.sendFile(path.join(frontendDistPath, 'index.html'));
+    return next();
   });
 } else {
   app.get('/', (_req, res) => {
