@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const db = require('./src/db');
-require('dotenv').config();
 
 async function main() {
   const hash = await bcrypt.hash('Admin123456', 10);

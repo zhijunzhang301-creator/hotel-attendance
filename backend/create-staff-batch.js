@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const db = require('./src/db');
-require('dotenv').config();
 
 const staffList = [
   { no: '0011', name: 'Henry, Natasha',                    dept: 'Laundry',          role: 'staff' },

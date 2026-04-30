@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const db = require('./src/db');
-require('dotenv').config();
 
 async function upsertUser({ name, employee_no, password, role, department }) {
   const hash = await bcrypt.hash(password, 10);
