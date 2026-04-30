@@ -5,10 +5,16 @@ require('dotenv').config();
 async function main() {
   const hash = await bcrypt.hash('Admin123456', 10);
   await db.query(
-    `UPDATE employees SET password_hash=$1 WHERE employee_no='ADMIN001'`,
+    `INSERT INTO employees (name, employee_no, password_hash, role, department)
+     VALUES ('System Admin', 'ADMIN001', $1, 'admin', 'Administration')
+     ON CONFLICT (employee_no)
+     DO UPDATE SET
+       password_hash = EXCLUDED.password_hash,
+       role = EXCLUDED.role,
+       department = EXCLUDED.department`,
     [hash]
   );
-  console.log('密码重置成功');
+  console.log('Admin account is ready: ADMIN001 / Admin123456');
   process.exit();
 }
 main();

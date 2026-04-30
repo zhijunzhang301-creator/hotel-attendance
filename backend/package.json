@@ -4,6 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "start:lan": "HOST=0.0.0.0 node index.js",
+    "seed:access": "node create-access-users.js",
+    "seed:admin": "node create-admin.js",
+    "seed:staff": "node create-staff-batch.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

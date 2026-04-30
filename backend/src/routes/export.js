@@ -12,101 +12,159 @@ const managerOnly = (req, res, next) => {
 
 router.use(authMiddleware);
 
+const isValidWeekStart = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || '');
+
 const fmt = (ts) => ts
   ? new Date(ts).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' })
   : '--:--';
+
+const fmtDate = (value) => {
+  if (!value) return '--/--';
+  return new Date(value).toLocaleDateString('en-CA', {
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'America/Toronto',
+  });
+};
+
+const renderReportHeader = (doc, title, weekStart) => {
+  doc.fontSize(18).text(title, { align: 'center' });
+  doc.moveDown(0.3);
+  doc.fontSize(12).text(`Week Starting: ${weekStart}`, { align: 'center' });
+  doc.moveDown();
+};
+
+const renderEmptyState = (doc, message) => {
+  doc.moveDown(2);
+  doc.fontSize(12).text(message, { align: 'center' });
+};
+
+const ensureSpacing = (doc, minY = 720) => {
+  if (doc.y > minY) {
+    doc.addPage();
+  }
+};
 
 // 导出单个员工某周 PDF（manager 和 admin 都可以）
 router.get('/single/:employee_id', managerOnly, async (req, res) => {
   const { employee_id } = req.params;
   const { week_start } = req.query;
 
-  const result = await db.query(
-    `SELECT ar.*, e.name, e.employee_no, e.department
-     FROM attendance_records ar
-     JOIN employees e ON ar.employee_id = e.id
-     WHERE ar.employee_id = $1
-       AND ar.record_date >= $2
-       AND ar.record_date < $2::date + INTERVAL '7 days'
-     ORDER BY ar.record_date`,
-    [employee_id, week_start]
-  );
+  if (!isValidWeekStart(week_start)) {
+    return res.status(400).json({ error: 'A valid week_start date is required' });
+  }
 
-  const emp = result.rows[0];
-  const doc = new PDFDocument({ margin: 50 });
-
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition',
-    `attachment; filename="attendance_${emp?.employee_no}_${week_start}.pdf"`);
-  doc.pipe(res);
-
-  doc.fontSize(18).text('Employee Attendance Record', { align: 'center' });
-  doc.moveDown();
-  doc.fontSize(12).text(`Name: ${emp?.name}    Employee No: ${emp?.employee_no}    Department: ${emp?.department}`);
-  doc.text(`Week starting: ${week_start}`);
-  doc.moveDown();
-
-  doc.fontSize(11);
-  doc.text('Date        Start       End         Break       Status');
-  doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-  doc.moveDown(0.3);
-
-  result.rows.forEach(r => {
-    const date = r.record_date?.slice(5, 10);
-    const status = r.status === 'modified' ? 'Modified' : 'Normal';
-    doc.text(
-      `${date}      ${fmt(r.clock_in)}      ${fmt(r.clock_out)}      ${r.break_hours_rounded}h          ${status}`
+  try {
+    const result = await db.query(
+      `SELECT ar.*, e.name, e.employee_no, e.department
+       FROM attendance_records ar
+       JOIN employees e ON ar.employee_id = e.id
+       WHERE ar.employee_id = $1
+         AND ar.record_date >= $2
+         AND ar.record_date < $2::date + INTERVAL '7 days'
+       ORDER BY ar.record_date`,
+      [employee_id, week_start]
     );
-  });
 
-  doc.end();
+    const emp = result.rows[0];
+    const doc = new PDFDocument({ margin: 50 });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition',
+      `attachment; filename="attendance_${emp?.employee_no || employee_id}_${week_start}.pdf"`);
+    doc.pipe(res);
+
+    renderReportHeader(doc, 'Employee Attendance Report', week_start);
+
+    if (!emp) {
+      renderEmptyState(doc, 'No attendance records were found for this employee during the selected week.');
+      doc.end();
+      return;
+    }
+
+    doc.fontSize(12).text(`Name: ${emp.name}`);
+    doc.text(`Employee Number: ${emp.employee_no}`);
+    doc.text(`Department: ${emp.department || 'N/A'}`);
+    doc.moveDown();
+
+    doc.fontSize(11).text('Date        Start       End         Break       Status');
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown(0.3);
+
+    result.rows.forEach((r) => {
+      const date = fmtDate(r.record_date);
+      const status = r.status === 'modified' ? 'Modified' : 'Normal';
+      doc.text(
+        `${date}      ${fmt(r.clock_in)}      ${fmt(r.clock_out)}      ${r.break_hours_rounded}h          ${status}`
+      );
+      ensureSpacing(doc);
+    });
+
+    doc.end();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // 导出全部员工某周 PDF（manager 和 admin 都可以）
 router.get('/all', managerOnly, async (req, res) => {
   const { week_start } = req.query;
 
-  const result = await db.query(
-    `SELECT ar.*, e.name, e.employee_no, e.department
-     FROM attendance_records ar
-     JOIN employees e ON ar.employee_id = e.id
-     WHERE ar.record_date >= $1
-       AND ar.record_date < $1::date + INTERVAL '7 days'
-     ORDER BY e.department, e.name, ar.record_date`,
-    [week_start]
-  );
+  if (!isValidWeekStart(week_start)) {
+    return res.status(400).json({ error: 'A valid week_start date is required' });
+  }
 
-  const doc = new PDFDocument({ margin: 50 });
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition',
-    `attachment; filename="attendance_all_${week_start}.pdf"`);
-  doc.pipe(res);
+  try {
+    const result = await db.query(
+      `SELECT ar.*, e.name, e.employee_no, e.department
+       FROM attendance_records ar
+       JOIN employees e ON ar.employee_id = e.id
+       WHERE ar.record_date >= $1
+         AND ar.record_date < $1::date + INTERVAL '7 days'
+       ORDER BY e.department, e.name, ar.record_date`,
+      [week_start]
+    );
 
-  doc.fontSize(18).text('Full Staff Attendance Report', { align: 'center' });
-  doc.fontSize(12).text(`Week starting: ${week_start}`, { align: 'center' });
-  doc.moveDown();
+    const doc = new PDFDocument({ margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition',
+      `attachment; filename="attendance_all_${week_start}.pdf"`);
+    doc.pipe(res);
 
-  const grouped = {};
-  result.rows.forEach(r => {
-    if (!grouped[r.employee_no]) grouped[r.employee_no] = [];
-    grouped[r.employee_no].push(r);
-  });
+    renderReportHeader(doc, 'Full Staff Attendance Report', week_start);
 
-  Object.values(grouped).forEach(rows => {
-    const emp = rows[0];
-    doc.fontSize(13).text(`${emp.name} (${emp.employee_no}) - ${emp.department}`);
-    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-    doc.fontSize(10);
-    rows.forEach(r => {
-      const date = r.record_date?.slice(5, 10);
-      doc.text(
-        `${date}    Start: ${fmt(r.clock_in)}    End: ${fmt(r.clock_out)}    Break: ${r.break_hours_rounded}h    Status: ${r.status === 'modified' ? 'Modified' : 'Normal'}`
-      );
+    if (result.rows.length === 0) {
+      renderEmptyState(doc, 'No attendance records were found for the selected week.');
+      doc.end();
+      return;
+    }
+
+    const grouped = {};
+    result.rows.forEach(r => {
+      if (!grouped[r.employee_no]) grouped[r.employee_no] = [];
+      grouped[r.employee_no].push(r);
     });
-    doc.moveDown();
-  });
 
-  doc.end();
+    Object.values(grouped).forEach(rows => {
+      const emp = rows[0];
+      doc.fontSize(13).text(`${emp.name} (${emp.employee_no}) - ${emp.department}`);
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+      doc.fontSize(10);
+      rows.forEach(r => {
+        const date = fmtDate(r.record_date);
+        doc.text(
+          `${date}    Start: ${fmt(r.clock_in)}    End: ${fmt(r.clock_out)}    Break: ${r.break_hours_rounded}h    Status: ${r.status === 'modified' ? 'Modified' : 'Normal'}`
+        );
+        ensureSpacing(doc);
+      });
+      doc.moveDown();
+      ensureSpacing(doc, 700);
+    });
+
+    doc.end();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
