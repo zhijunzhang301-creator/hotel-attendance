@@ -15,6 +15,11 @@ const getAllowedIps = () => (
 const isPrivilegedRole = (role) => ['admin', 'manager'].includes(role);
 
 const hasNetworkAccess = (req, role) => {
+  // Allow bypass when network restriction is disabled (for Vercel deployment)
+  if (process.env.DISABLE_NETWORK_CHECK === 'true') {
+    return true;
+  }
+
   if (isPrivilegedRole(role) && process.env.ADMIN_BYPASS !== 'false') {
     return true;
   }
@@ -22,6 +27,11 @@ const hasNetworkAccess = (req, role) => {
   const clientIp = getClientIp(req);
   const allowedIps = getAllowedIps();
   const isLocalDev = ['127.0.0.1', '::1', 'localhost'].includes(clientIp);
+
+  // If no allowed IPs configured (empty), allow all (for Vercel deployment)
+  if (allowedIps.length === 0) {
+    return true;
+  }
 
   return isLocalDev || allowedIps.includes(clientIp);
 };

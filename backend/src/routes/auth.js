@@ -14,8 +14,8 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const result = await db.query(
-      'SELECT * FROM employees WHERE employee_no=$1',
+const result = await db.query(
+      'SELECT * FROM users WHERE employee_no=$1',
       [String(employee_no).trim()]
     );
     const employee = result.rows[0];
@@ -30,15 +30,15 @@ router.post('/login', async (req, res) => {
     const valid = await bcrypt.compare(password, employee.password_hash);
     if (!valid) return res.status(401).json({ error: 'Incorrect password' });
 
-    await logAudit({
+await logAudit({
       operatorId: employee.id,
       action: 'login',
       ipAddress: getClientIp(req),
-      newValue: { employee_id: employee.id, role: employee.role },
+      newValue: { user_id: employee.id, role: employee.role },
     });
 
-    const token = jwt.sign(
-      { employee_id: employee.id, role: employee.role, name: employee.name },
+const token = jwt.sign(
+      { user_id: employee.id, role: employee.role, name: employee.name },
       process.env.JWT_SECRET,
       { expiresIn: '12h' }
     );
@@ -64,9 +64,9 @@ router.post('/change-password', authMiddleware, async (req, res) => {
   }
 
   try {
-    const result = await db.query(
-      'SELECT id, password_hash FROM employees WHERE id=$1',
-      [req.user.employee_id]
+const result = await db.query(
+      'SELECT id, password_hash FROM users WHERE id=$1',
+      [req.user.user_id]
     );
 
     const employee = result.rows[0];
@@ -76,16 +76,16 @@ router.post('/change-password', authMiddleware, async (req, res) => {
     if (!valid) return res.status(401).json({ error: 'Current password is incorrect' });
 
     const nextHash = await bcrypt.hash(new_password, 10);
-    await db.query(
-      'UPDATE employees SET password_hash=$1 WHERE id=$2',
+await db.query(
+      'UPDATE users SET password_hash=$1 WHERE id=$2',
       [nextHash, employee.id]
     );
 
-    await logAudit({
+await logAudit({
       operatorId: employee.id,
       action: 'change_password',
       ipAddress: getClientIp(req),
-      newValue: { employee_id: employee.id },
+      newValue: { user_id: employee.id },
     });
 
     res.json({ success: true });
@@ -102,19 +102,19 @@ router.post('/request-password-reset', async (req, res) => {
   }
 
   try {
-    const result = await db.query(
-      'SELECT id, employee_no, name, role FROM employees WHERE employee_no=$1',
+const result = await db.query(
+      'SELECT id, employee_no, name, role FROM users WHERE employee_no=$1',
       [String(employee_no).trim()]
     );
 
     const employee = result.rows[0];
     if (employee) {
-      await logAudit({
+await logAudit({
         operatorId: employee.id,
         action: 'password_reset_request',
         ipAddress: getClientIp(req),
         newValue: {
-          employee_id: employee.id,
+          user_id: employee.id,
           employee_no: employee.employee_no,
           employee_name: employee.name,
           role: employee.role,

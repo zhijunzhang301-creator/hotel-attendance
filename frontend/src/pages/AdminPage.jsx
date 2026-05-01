@@ -302,7 +302,7 @@ export default function AdminPage() {
             {records.map((r) => (
               <tr key={r.id} className="border-t border-gray-50 hover:bg-gray-50">
                 <td className="px-3 py-3">{r.name}</td>
-                <td className="px-3 py-3 text-gray-400">{fmtDay(r.record_date)}</td>
+<td className="px-3 py-3 text-gray-400">{fmtDay(r.check_date)}</td>
                 <td className="px-3 py-3">{fmt(r.clock_in)}</td>
                 <td className="px-3 py-3">{fmt(r.clock_out)}</td>
                 <td className="px-3 py-3">{r.break_hours_rounded}h</td>
@@ -316,7 +316,7 @@ export default function AdminPage() {
                   <button
                     onClick={async () => {
                       try {
-                        await downloadPdf(`/export/single/${r.employee_id}?week_start=${weekStart}`, `attendance_${r.employee_no}_${weekStart}.pdf`);
+await downloadPdf(`/export/single/${r.user_id}?week_start=${weekStart}`, `attendance_${r.employee_no}_${weekStart}.pdf`);
                         showMessage('Employee PDF exported successfully', 'success');
                       } catch (err) {
                         showMessage(err.message || 'Export failed', 'error');

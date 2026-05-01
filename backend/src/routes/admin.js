@@ -28,13 +28,13 @@ router.get('/weekly', async (req, res) => {
   }
 
   try {
-    const result = await db.query(
-      `SELECT ar.*, e.name, e.employee_no, e.department
-       FROM attendance_records ar
-       JOIN employees e ON ar.employee_id = e.id
-       WHERE ar.record_date >= $1
-         AND ar.record_date < $1::date + INTERVAL '7 days'
-       ORDER BY e.department, e.name, ar.record_date`,
+const result = await db.query(
+      `SELECT ar.*, u.name, u.employee_no, u.department
+       FROM check_ins ar
+       JOIN users u ON ar.user_id = u.id
+       WHERE ar.check_date >= $1
+         AND ar.check_date < $1::date + INTERVAL '7 days'
+       ORDER BY u.department, u.name, ar.check_date`,
       [week_start]
     );
     res.json(result.rows);
@@ -61,12 +61,12 @@ router.put('/record/:id', async (req, res) => {
   }
 
   try {
-    // 先取旧值存入审计
-    const old = await db.query('SELECT * FROM attendance_records WHERE id=$1', [id]);
+// 先取旧值存入审计
+    const old = await db.query('SELECT * FROM check_ins WHERE id=$1', [id]);
 
     const rounded = roundBreakHours(normalizedBreakMinutes);
     const result = await db.query(
-      `UPDATE attendance_records
+      `UPDATE check_ins
        SET clock_in=$1, clock_out=$2, break_minutes=$3,
            break_hours_rounded=$4, status='modified',
            modified_by=$5, modified_at=NOW()
@@ -76,7 +76,7 @@ router.put('/record/:id', async (req, res) => {
         normalizedClockOut ? normalizedClockOut.toISOString() : null,
         normalizedBreakMinutes,
         rounded,
-        req.user.employee_id,
+        req.user.user_id,
         id
       ]
     );
@@ -86,7 +86,7 @@ router.put('/record/:id', async (req, res) => {
       `INSERT INTO audit_logs
          (operator_id, action, target_record_id, old_value, new_value, ip_address)
        VALUES ($1, 'modify', $2, $3, $4, $5)`,
-      [req.user.employee_id, id,
+      [req.user.user_id, id,
        JSON.stringify(old.rows[0]),
        JSON.stringify(result.rows[0]),
        getClientIp(req)]
@@ -102,17 +102,17 @@ router.get('/audit', async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 100, 300);
 
   try {
-    const result = await db.query(
+const result = await db.query(
       `SELECT
          al.*,
          op.name AS operator_name,
-         ar.record_date,
+         ar.check_date,
          emp.name AS employee_name,
          emp.employee_no
        FROM audit_logs al
-       LEFT JOIN employees op ON al.operator_id = op.id
-       LEFT JOIN attendance_records ar ON al.target_record_id = ar.id
-       LEFT JOIN employees emp ON ar.employee_id = emp.id
+       LEFT JOIN users op ON al.operator_id = op.id
+       LEFT JOIN check_ins ar ON al.target_record_id = ar.id
+       LEFT JOIN users emp ON ar.user_id = emp.id
        ORDER BY al.created_at DESC
        LIMIT $1`,
       [limit]
@@ -126,14 +126,14 @@ router.get('/audit', async (req, res) => {
 
 router.get('/password-reset-requests', async (req, res) => {
   try {
-    const result = await db.query(
+const result = await db.query(
       `SELECT
          al.id,
          al.created_at,
          al.new_value,
          op.name AS operator_name
        FROM audit_logs al
-       LEFT JOIN employees op ON al.operator_id = op.id
+       LEFT JOIN users op ON al.operator_id = op.id
        WHERE al.action = 'password_reset_request'
        ORDER BY al.created_at DESC`
     );
@@ -168,22 +168,22 @@ router.post('/password-reset-requests/:id/resolve', async (req, res) => {
       return res.status(400).json({ error: 'This reset request has already been handled' });
     }
 
-    const employeeId = requestLog.new_value?.employee_id;
-    if (!employeeId) {
+const userId = requestLog.new_value?.user_id;
+    if (!userId) {
       return res.status(400).json({ error: 'Reset request is missing employee information' });
     }
 
     const passwordHash = await require('bcryptjs').hash(tempPassword, 10);
     await db.query(
-      'UPDATE employees SET password_hash=$1 WHERE id=$2',
-      [passwordHash, employeeId]
+      'UPDATE users SET password_hash=$1 WHERE id=$2',
+      [passwordHash, userId]
     );
 
     const resolvedPayload = {
       ...requestLog.new_value,
       status: 'resolved',
       resolved_at: new Date().toISOString(),
-      resolved_by: req.user.employee_id,
+      resolved_by: req.user.user_id,
     };
 
     await db.query(
@@ -192,11 +192,11 @@ router.post('/password-reset-requests/:id/resolve', async (req, res) => {
     );
 
     await logAudit({
-      operatorId: req.user.employee_id,
+      operatorId: req.user.user_id,
       action: 'password_reset_completed',
       ipAddress: getClientIp(req),
       newValue: {
-        employee_id: employeeId,
+        user_id: userId,
         request_id: Number(id),
       },
     });

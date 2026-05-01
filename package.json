@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "name": "hotel-attendance-monorepo",
+  "version": "1.0.0",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ]
+}

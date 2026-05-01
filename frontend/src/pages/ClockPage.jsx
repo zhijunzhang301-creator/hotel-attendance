@@ -52,7 +52,7 @@ export default function ClockPage() {
     try {
       const { data } = await api.get('/attendance/my-week');
       const today = getTorontoDateKey();
-      const todayRecord = data.find((r) => getRecordDateKey(r.record_date) === today);
+const todayRecord = data.find((r) => getRecordDateKey(r.check_date) === today);
       setStatus(todayRecord || null);
       setWeekRecords(data);
       setBreakMin(todayRecord?.break_minutes || 0);
@@ -294,7 +294,7 @@ export default function ClockPage() {
             <div key={r.id} className="py-3 border-b border-gray-100 last:border-0">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-gray-400">
-                  {new Date(r.record_date).toLocaleDateString('en-CA', {
+{new Date(r.check_date).toLocaleDateString('en-CA', {
                     weekday: 'short',
                     day: 'numeric',
                     timeZone: 'America/Toronto',

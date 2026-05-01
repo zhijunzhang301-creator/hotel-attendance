@@ -46,8 +46,8 @@ const ensureSpacing = (doc, minY = 720) => {
 };
 
 // 导出单个员工某周 PDF（manager 和 admin 都可以）
-router.get('/single/:employee_id', managerOnly, async (req, res) => {
-  const { employee_id } = req.params;
+router.get('/single/:user_id', managerOnly, async (req, res) => {
+  const { user_id } = req.params;
   const { week_start } = req.query;
 
   if (!isValidWeekStart(week_start)) {
@@ -56,14 +56,14 @@ router.get('/single/:employee_id', managerOnly, async (req, res) => {
 
   try {
     const result = await db.query(
-      `SELECT ar.*, e.name, e.employee_no, e.department
-       FROM attendance_records ar
-       JOIN employees e ON ar.employee_id = e.id
-       WHERE ar.employee_id = $1
-         AND ar.record_date >= $2
-         AND ar.record_date < $2::date + INTERVAL '7 days'
-       ORDER BY ar.record_date`,
-      [employee_id, week_start]
+      `SELECT ar.*, u.name, u.employee_no, u.department
+       FROM check_ins ar
+       JOIN users u ON ar.user_id = u.id
+       WHERE ar.user_id = $1
+         AND ar.check_date >= $2
+         AND ar.check_date < $2::date + INTERVAL '7 days'
+       ORDER BY ar.check_date`,
+      [user_id, week_start]
     );
 
     const emp = result.rows[0];
@@ -71,7 +71,7 @@ router.get('/single/:employee_id', managerOnly, async (req, res) => {
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition',
-      `attachment; filename="attendance_${emp?.employee_no || employee_id}_${week_start}.pdf"`);
+      `attachment; filename="attendance_${emp?.employee_no || user_id}_${week_start}.pdf"`);
     doc.pipe(res);
 
     renderReportHeader(doc, 'Employee Attendance Report', week_start);
@@ -92,7 +92,7 @@ router.get('/single/:employee_id', managerOnly, async (req, res) => {
     doc.moveDown(0.3);
 
     result.rows.forEach((r) => {
-      const date = fmtDate(r.record_date);
+      const date = fmtDate(r.check_date);
       const status = r.status === 'modified' ? 'Modified' : 'Normal';
       doc.text(
         `${date}      ${fmt(r.clock_in)}      ${fmt(r.clock_out)}      ${r.break_hours_rounded}h          ${status}`
@@ -116,12 +116,12 @@ router.get('/all', managerOnly, async (req, res) => {
 
   try {
     const result = await db.query(
-      `SELECT ar.*, e.name, e.employee_no, e.department
-       FROM attendance_records ar
-       JOIN employees e ON ar.employee_id = e.id
-       WHERE ar.record_date >= $1
-         AND ar.record_date < $1::date + INTERVAL '7 days'
-       ORDER BY e.department, e.name, ar.record_date`,
+      `SELECT ar.*, u.name, u.employee_no, u.department
+       FROM check_ins ar
+       JOIN users u ON ar.user_id = u.id
+       WHERE ar.check_date >= $1
+         AND ar.check_date < $1::date + INTERVAL '7 days'
+       ORDER BY u.department, u.name, ar.check_date`,
       [week_start]
     );
 
@@ -151,7 +151,7 @@ router.get('/all', managerOnly, async (req, res) => {
       doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
       doc.fontSize(10);
       rows.forEach(r => {
-        const date = fmtDate(r.record_date);
+        const date = fmtDate(r.check_date);
         doc.text(
           `${date}    Start: ${fmt(r.clock_in)}    End: ${fmt(r.clock_out)}    Break: ${r.break_hours_rounded}h    Status: ${r.status === 'modified' ? 'Modified' : 'Normal'}`
         );
