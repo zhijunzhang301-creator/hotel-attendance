@@ -27,7 +27,7 @@
     "globals": "^17.4.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.19",
-    "vite": "^8.0.1"
+    "vite": "5"
   },
   "engines": {
     "node": ">=18 <22"
