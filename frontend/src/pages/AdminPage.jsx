@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '../api';
+import api, { baseURL as apiBaseURL } from '../api';
 
 const getMonday = () => {
   const d = new Date();
@@ -68,8 +68,7 @@ export default function AdminPage() {
 
   const downloadPdf = async (path, filename) => {
     const token = localStorage.getItem('token');
-    const base = import.meta.env.VITE_API_URL || '/api';
-    const res = await fetch(`${base}${path}`, {
+    const res = await fetch(`${apiBaseURL}${path}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
 

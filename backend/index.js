@@ -58,4 +58,9 @@ if (hasFrontendBuild) {
   });
 }
 
+const server = app.listen(port, host, () => {
+  console.log(`Server running at http://${host}:${port}`);
+});
+
 module.exports = app;
+

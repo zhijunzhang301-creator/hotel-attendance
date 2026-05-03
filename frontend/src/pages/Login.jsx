@@ -33,7 +33,11 @@ export default function Login() {
       console.log('axios error:', err);
       console.log('response:', err.response);
       console.log('data:', err.response?.data);
-      setError(err.response?.data?.error || 'Login failed. Please try again!');
+      setError(
+        err.response?.data?.error ||
+          err.message ||
+          'Login failed. Please try again!'
+      );
     } finally {
       setLoading(false);
     }

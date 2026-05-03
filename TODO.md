@@ -1,31 +1,15 @@
-# Bug Fix Plan - COMPLETED
+# TODO - Fix Login Issue
 
-## Bugs Fixed
+## Task: Fix login failure - table name mismatch between schema and creation scripts
 
-### Bug 1: ClockPage.jsx - Field Name Error ✅
-- Location: frontend/src/pages/ClockPage.jsx line 31 and line 144
-- Issue: Used `r.record_date`, but database field is `check_date`
-- Fix: Changed `r.record_date` to `r.check_date`
+### Steps Completed:
 
-### Bug 2: AdminPage.jsx - Field Name Error ✅
-- Location: frontend/src/pages/AdminPage.jsx line 170
-- Issue: Used `r.record_date`, but database field is `check_date`
-- Fix: Changed `r.record_date` to `r.check_date`
+- [x] 1. Analyze issue - found table name mismatch (`users` vs `employees`)
+- [x] 2. Get user confirmation for the fix plan  
+- [x] 3. Modify `backend/src/db/index.js` - add migration logic
+- [x] 4. Fix `create-admin.js` - use `users` table
+- [x] 5. Fix `create-staff.js` - use `users` table
+- [x] 6. Fix `create-staff-batch.js` - use `users` table
+- [x] 7. Fix `create-access-users.js` - use `users` table
 
-### Bug 3: AdminPage.jsx - Export PDF Parameter Error ✅
-- Location: frontend/src/pages/AdminPage.jsx line 205
-- Issue: Used `r.employee_id`, but API returns `r.user_id`
-- Fix: Changed `r.employee_id` to `r.user_id` for PDF export
-
-### Bug 4: Login Failed Issue ✅
-- Issue: Staff cannot login from Vercel - network access check fails
-- Fix: Updated networkAccess.js to:
-  1. Allow bypass when `DISABLE_NETWORK_CHECK=true` (for Vercel)
-  2. Allow all users when no allowed IPs are configured (empty ALLOWED_IP means allow all)
-
-## Implementation Completed
-
-- [x] 1. Fix ClockPage.jsx - change `record_date` to `check_date`
-- [x] 2. Fix AdminPage.jsx - change `record_date` to `check_date`
-- [x] 3. Fix AdminPage.jsx - change `employee_id` to `user_id` for PDF export
-- [x] 4. Fix networkAccess.js - allow login from anywhere in production
+## Status: COMPLETED

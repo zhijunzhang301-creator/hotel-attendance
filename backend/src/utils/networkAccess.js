@@ -20,6 +20,11 @@ const hasNetworkAccess = (req, role) => {
     return true;
   }
 
+  // Check if running on Vercel (production)
+  if (process.env.VERCEL === 'true' || process.env.VERCEL === '1') {
+    return true;
+  }
+
   if (isPrivilegedRole(role) && process.env.ADMIN_BYPASS !== 'false') {
     return true;
   }

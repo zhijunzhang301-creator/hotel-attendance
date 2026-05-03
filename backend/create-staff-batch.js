@@ -48,7 +48,7 @@ async function main() {
     // 初始密码 = 工号，员工第一次登录后可以自己改
     const hash = await bcrypt.hash(s.no, 10);
     await db.query(
-      `INSERT INTO employees (name, employee_no, password_hash, role, department)
+      `INSERT INTO users (name, employee_no, password_hash, role, department)
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (employee_no) DO NOTHING`,
       [s.name, s.no, hash, s.role, s.dept]
@@ -58,4 +58,5 @@ async function main() {
   console.log('\nAll done! Initial password = employee number.');
   process.exit();
 }
+
 main();

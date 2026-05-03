@@ -6,7 +6,7 @@ const db = require('./src/db');
 async function upsertUser({ name, employee_no, password, role, department }) {
   const hash = await bcrypt.hash(password, 10);
   await db.query(
-    `INSERT INTO employees (name, employee_no, password_hash, role, department)
+    `INSERT INTO users (name, employee_no, password_hash, role, department)
      VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (employee_no)
      DO UPDATE SET
